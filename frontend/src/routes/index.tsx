@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -99,7 +99,13 @@ function EventoCalendario({ event }: { event: CitaEvento }) {
 
 function ListaCitasPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const nombre = useAuthStore(state => state.nombre);
+
+  const cerrarSesion = () => {
+    useAuthStore.getState().logout();
+    navigate({ to: '/login' });
+  };
 
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
@@ -195,7 +201,7 @@ function ListaCitasPage() {
             <Button
               variant="ghost"
               className="text-brand-foreground hover:bg-brand-foreground/10 hover:text-brand-foreground"
-              onClick={() => useAuthStore.getState().logout()}
+              onClick={cerrarSesion}
             >
               Cerrar sesión
             </Button>
