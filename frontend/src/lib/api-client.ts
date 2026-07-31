@@ -14,3 +14,18 @@ apiClient.interceptors.request.use(config => {
 
   return config;
 });
+
+apiClient.interceptors.response.use(
+  response => response,
+  error => {
+    // Un 401 en /auth/login es "contraseña incorrecta", no una sesión vencida.
+    const esLogin = error.config?.url?.includes('/auth/login');
+
+    if (error.response?.status === 401 && !esLogin) {
+      useAuthStore.getState().logout();
+      window.location.assign('/login');
+    }
+
+    return Promise.reject(error);
+  }
+);
