@@ -80,6 +80,13 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// Aplica migraciones pendientes al arrancar (incluye el seed del usuario admin).
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<CitasDbContext>();
+    dbContext.Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
