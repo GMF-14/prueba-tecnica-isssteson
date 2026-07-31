@@ -88,3 +88,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* react-big-calendar dibuja su propia etiqueta de hora sobre cada evento;
+   con citas de 30 minutos el espacio es muy angosto y se amontona con
+   nuestro propio contenido. La ocultamos: nuestro componente de evento ya
+   muestra lo necesario, y el detalle completo se ve al hacer clic. */
+.rbc-event-label {
+  display: none;
+}
+
+.rbc-event {
+  background-color: transparent;
+  padding: 0;
+}

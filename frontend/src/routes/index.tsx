@@ -10,18 +10,26 @@ import {
 import { format, getDay, parse, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Plus, Stethoscope } from 'lucide-react';
+import { CalendarX, Plus, Stethoscope, X } from 'lucide-react';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 import { useAuthStore } from '@/stores/auth-store';
-import { cancelarCita, consultarCitas, type Cita } from '@/features/citas/api';
+import {
+  cancelarCita,
+  consultarCitas,
+  type Cita,
+  type EstadoCita,
+} from '@/features/citas/api';
 import { obtenerMedicos } from '@/features/medicos/api';
 import { CitaFormDialog } from '@/features/citas/cita-form-dialog';
+import { CalendarioToolbar } from '@/features/citas/calendario-toolbar';
 import { confirmar, notificar } from '@/lib/alertas';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -68,6 +76,8 @@ const itemVariants = {
   },
 };
 
+type FiltroEstado = 'todas' | EstadoCita;
+
 interface CitaEvento {
   id: number;
   title: string;
@@ -86,9 +96,9 @@ function EventoCalendario({ event }: { event: CitaEvento }) {
       whileHover={{ scale: 1.03 }}
       transition={{ duration: 0.15 }}
       className={cn(
-        'h-full w-full truncate rounded-md px-1.5 py-0.5 text-xs font-medium',
+        'h-full w-full truncate rounded-md px-1.5 py-0.5 text-xs leading-tight font-medium',
         cancelada
-          ? 'bg-muted-foreground/30 text-foreground line-through'
+          ? 'bg-muted-foreground/25 text-muted-foreground line-through'
           : 'bg-brand text-brand-foreground'
       )}
     >
@@ -110,6 +120,7 @@ function ListaCitasPage() {
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
   const [medicoId, setMedicoId] = useState('todos');
+  const [estado, setEstado] = useState<FiltroEstado>('todas');
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
   const [vista, setVista] = useState<View>(Views.WEEK);
   const [fecha, setFecha] = useState(new Date());
@@ -155,20 +166,62 @@ function ListaCitasPage() {
     }
   };
 
+  const citasFiltradas = useMemo(
+    () =>
+      (citasQuery.data ?? []).filter(
+        cita => estado === 'todas' || cita.estado === estado
+      ),
+    [citasQuery.data, estado]
+  );
+
   const eventos = useMemo<CitaEvento[]>(
     () =>
-      (citasQuery.data ?? []).map(cita => ({
+      citasFiltradas.map(cita => ({
         id: cita.id,
         title: `${cita.pacienteNombre} — ${cita.medicoNombre}`,
         start: new Date(cita.fechaHoraInicio),
         end: new Date(cita.fechaHoraFin),
         cita,
       })),
-    [citasQuery.data]
+    [citasFiltradas]
   );
 
-  const hayFiltrosActivos =
-    fechaDesde !== '' || fechaHasta !== '' || medicoId !== 'todos';
+  const limpiarFiltros = () => {
+    setFechaDesde('');
+    setFechaHasta('');
+    setMedicoId('todos');
+    setEstado('todas');
+  };
+
+  const medicoSeleccionado = medicosQuery.data?.find(
+    m => String(m.id) === medicoId
+  );
+
+  const chips = [
+    fechaDesde && {
+      key: 'desde',
+      label: `Desde: ${fechaDesde}`,
+      onRemove: () => setFechaDesde(''),
+    },
+    fechaHasta && {
+      key: 'hasta',
+      label: `Hasta: ${fechaHasta}`,
+      onRemove: () => setFechaHasta(''),
+    },
+    medicoId !== 'todos' && {
+      key: 'medico',
+      label: `Médico: ${medicoSeleccionado?.nombreCompleto ?? medicoId}`,
+      onRemove: () => setMedicoId('todos'),
+    },
+    estado !== 'todas' && {
+      key: 'estado',
+      label: `Estado: ${estado}`,
+      onRemove: () => setEstado('todas'),
+    },
+  ].filter(
+    (chip): chip is { key: string; label: string; onRemove: () => void } =>
+      Boolean(chip)
+  );
 
   return (
     <div className="bg-muted min-h-svh">
@@ -217,59 +270,93 @@ function ListaCitasPage() {
       >
         <motion.div
           variants={itemVariants}
-          className="bg-card flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:flex-wrap sm:items-end"
+          className="bg-card flex flex-col gap-4 rounded-lg border p-4"
         >
-          <div className="space-y-1.5">
-            <Label htmlFor="fechaDesde">Desde</Label>
-            <Input
-              id="fechaDesde"
-              type="date"
-              value={fechaDesde}
-              onChange={event => setFechaDesde(event.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="fechaHasta">Hasta</Label>
-            <Input
-              id="fechaHasta"
-              type="date"
-              value={fechaHasta}
-              onChange={event => setFechaHasta(event.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Médico</Label>
-            <Select value={medicoId} onValueChange={setMedicoId}>
-              <SelectTrigger className="w-full sm:w-56">
-                <SelectValue placeholder="Todos los médicos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los médicos</SelectItem>
-                {medicosQuery.data?.map(medico => (
-                  <SelectItem key={medico.id} value={String(medico.id)}>
-                    {medico.nombreCompleto} — {medico.especialidad}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <AnimatePresence>
-            {hayFiltrosActivos && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.15 }}
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="space-y-1.5">
+              <Label htmlFor="fechaDesde">Desde</Label>
+              <Input
+                id="fechaDesde"
+                type="date"
+                value={fechaDesde}
+                onChange={event => setFechaDesde(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="fechaHasta">Hasta</Label>
+              <Input
+                id="fechaHasta"
+                type="date"
+                value={fechaHasta}
+                onChange={event => setFechaHasta(event.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Médico</Label>
+              <Select value={medicoId} onValueChange={setMedicoId}>
+                <SelectTrigger className="w-full sm:w-56">
+                  <SelectValue placeholder="Todos los médicos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los médicos</SelectItem>
+                  {medicosQuery.data?.map(medico => (
+                    <SelectItem key={medico.id} value={String(medico.id)}>
+                      {medico.nombreCompleto} — {medico.especialidad}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Estado</Label>
+              <Select
+                value={estado}
+                onValueChange={value => setEstado(value as FiltroEstado)}
               >
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setFechaDesde('');
-                    setFechaHasta('');
-                    setMedicoId('todos');
-                  }}
-                >
-                  Limpiar filtros
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  <SelectItem value="Programada">Programada</SelectItem>
+                  <SelectItem value="Cancelada">Cancelada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {chips.length > 0 && (
+              <motion.div
+                layout
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex flex-wrap items-center gap-2"
+              >
+                {chips.map(chip => (
+                  <motion.div
+                    key={chip.key}
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                  >
+                    <Badge variant="secondary" className="gap-1 py-1 pr-1">
+                      {chip.label}
+                      <button
+                        type="button"
+                        onClick={chip.onRemove}
+                        className="hover:bg-muted-foreground/20 rounded-full p-0.5"
+                        aria-label={`Quitar filtro ${chip.label}`}
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </Badge>
+                  </motion.div>
+                ))}
+                <Button variant="ghost" size="sm" onClick={limpiarFiltros}>
+                  Limpiar todo
                 </Button>
               </motion.div>
             )}
@@ -280,50 +367,72 @@ function ListaCitasPage() {
           variants={itemVariants}
           className="bg-card rounded-lg border p-4"
         >
-          {citasQuery.isError ? (
+          {citasQuery.isLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-9 w-64" />
+              <Skeleton className="h-125 w-full sm:h-162.5" />
+            </div>
+          ) : citasQuery.isError ? (
             <p className="text-destructive text-sm">
               No se pudieron cargar las citas. Intenta de nuevo más tarde.
             </p>
           ) : (
-            <div className="h-125 sm:h-162.5">
-              <Calendar
-                localizer={localizer}
-                culture="es"
-                events={eventos}
-                startAccessor="start"
-                endAccessor="end"
-                date={fecha}
-                onNavigate={setFecha}
-                view={vista}
-                onView={setVista}
-                views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
-                style={{ height: '100%' }}
-                messages={{
-                  next: 'Sig.',
-                  previous: 'Ant.',
-                  today: 'Hoy',
-                  month: 'Mes',
-                  week: 'Semana',
-                  day: 'Día',
-                  agenda: 'Agenda',
-                  date: 'Fecha',
-                  time: 'Hora',
-                  event: 'Cita',
-                  noEventsInRange: 'No hay citas en este rango.',
-                }}
-                components={{ event: EventoCalendario }}
-                eventPropGetter={() => ({
-                  style: {
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    padding: 0,
-                  },
-                })}
-                onSelectEvent={(evento: CitaEvento) =>
-                  setCitaSeleccionada(evento.cita)
-                }
-              />
-            </div>
+            <>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-muted-foreground text-sm">
+                  {eventos.length}{' '}
+                  {eventos.length === 1
+                    ? 'cita encontrada'
+                    : 'citas encontradas'}
+                </p>
+                <div className="flex items-center gap-4 text-xs">
+                  <span className="flex items-center gap-1.5">
+                    <span className="bg-brand size-2.5 rounded-full" />
+                    Programada
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="bg-muted-foreground/40 size-2.5 rounded-full" />
+                    Cancelada
+                  </span>
+                </div>
+              </div>
+
+              {eventos.length === 0 && (
+                <div className="text-muted-foreground mb-3 flex items-center gap-2 text-sm">
+                  <CalendarX className="size-4" />
+                  No hay citas que coincidan con los filtros actuales.
+                </div>
+              )}
+
+              <div className="h-125 sm:h-162.5">
+                <Calendar
+                  localizer={localizer}
+                  culture="es"
+                  events={eventos}
+                  startAccessor="start"
+                  endAccessor="end"
+                  date={fecha}
+                  onNavigate={setFecha}
+                  view={vista}
+                  onView={setVista}
+                  views={[Views.MONTH, Views.WEEK, Views.DAY, Views.AGENDA]}
+                  style={{ height: '100%' }}
+                  messages={{
+                    date: 'Fecha',
+                    time: 'Hora',
+                    event: 'Cita',
+                    noEventsInRange: 'No hay citas en este rango.',
+                  }}
+                  components={{
+                    event: EventoCalendario,
+                    toolbar: CalendarioToolbar,
+                  }}
+                  onSelectEvent={(evento: CitaEvento) =>
+                    setCitaSeleccionada(evento.cita)
+                  }
+                />
+              </div>
+            </>
           )}
         </motion.div>
       </motion.div>
@@ -340,15 +449,15 @@ function ListaCitasPage() {
           {citaSeleccionada && (
             <>
               <dl className="space-y-2 text-sm">
-                <div className="flex justify-between">
+                <div className="flex items-center justify-between">
                   <dt className="text-muted-foreground">Médico</dt>
                   <dd>{citaSeleccionada.medicoNombre}</dd>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex items-center justify-between">
                   <dt className="text-muted-foreground">Paciente</dt>
                   <dd>{citaSeleccionada.pacienteNombre}</dd>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex items-center justify-between">
                   <dt className="text-muted-foreground">Horario</dt>
                   <dd>
                     {format(
@@ -358,9 +467,19 @@ function ListaCitasPage() {
                     - {format(new Date(citaSeleccionada.fechaHoraFin), 'HH:mm')}
                   </dd>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex items-center justify-between">
                   <dt className="text-muted-foreground">Estado</dt>
-                  <dd>{citaSeleccionada.estado}</dd>
+                  <dd>
+                    <Badge
+                      variant={
+                        citaSeleccionada.estado === 'Cancelada'
+                          ? 'secondary'
+                          : 'default'
+                      }
+                    >
+                      {citaSeleccionada.estado}
+                    </Badge>
+                  </dd>
                 </div>
               </dl>
 
