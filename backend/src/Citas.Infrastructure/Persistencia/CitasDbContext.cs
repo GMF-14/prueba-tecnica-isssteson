@@ -36,6 +36,17 @@ public class CitasDbContext : DbContext
 
             // Dos usuarios no pueden compartir el mismo nombre de usuario para iniciar sesión.
             entidad.HasIndex(u => u.NombreUsuario).IsUnique();
+
+            // Usuario seed para poder iniciar sesión sin un endpoint de registro
+            // (no está en los requisitos). Password: Admin123! (hash BCrypt precalculado).
+            entidad.HasData(new Usuario
+            {
+                Id = 1,
+                NombreUsuario = "admin",
+                PasswordHash = "$2a$11$oX8FybCxSeGMeAtWOuctxOZNJu1ckCuWEcBiy0fz5Ll/vZ8VPfC6q",
+                Nombre = "Administrador",
+                Activo = true
+            });
         });
 
         modelBuilder.Entity<Cita>(entidad =>
