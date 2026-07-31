@@ -3,6 +3,7 @@ using Citas.Application.Configuracion;
 using Citas.Application.Interfaces;
 using Citas.Infrastructure.Persistencia;
 using Citas.Infrastructure.Seguridad;
+using Citas.Infrastructure.Servicios;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -24,6 +25,8 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"))
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+builder.Services.AddScoped<IMedicoService, MedicoService>();
+builder.Services.AddScoped<IPacienteService, PacienteService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
