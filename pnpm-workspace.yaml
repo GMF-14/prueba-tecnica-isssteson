@@ -1,2 +1,6 @@
 packages:
-  - "frontend"
+  - 'frontend'
+
+# Protección contra ataques de cadena de suministro: no instala una versión de
+# paquete hasta que lleve al menos este tiempo (en minutos) publicada.
+minimumReleaseAge: 1440

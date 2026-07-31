@@ -1,0 +1,23 @@
+# Archivo de configuración de más alto nivel; deja de buscar en carpetas superiores
+root = true
+
+# Reglas aplicadas a todos los archivos
+[*]
+end_of_line = lf                # Saltos de línea estilo Unix
+insert_final_newline = true     # Siempre terminar los archivos con una línea en blanco
+trim_trailing_whitespace = true # Elimina espacios al final de línea al guardar
+indent_style = space            # Usar espacios, no tabs
+indent_size = 2                 # Indentación de 2 espacios
+charset = utf-8                 # Codificación UTF-8
+
+# C# (backend): sigue la convención estándar de 4 espacios
+[*.cs]
+indent_size = 4
+
+# YAML (docker-compose, pnpm-workspace)
+[*.{yml,yaml}]
+indent_size = 2
+
+# Markdown: los espacios finales son significativos (saltos de línea "soft")
+[*.md]
+trim_trailing_whitespace = false

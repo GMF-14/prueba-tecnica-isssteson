@@ -1,0 +1,24 @@
+# Forzar saltos de línea LF en todos los archivos de texto
+* text=auto eol=lf
+
+# Declarar explícitamente los archivos de texto
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.env text eol=lf
+*.sh text eol=lf
+
+# Archivos binarios: sin conversión de saltos de línea
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
