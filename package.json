@@ -1,0 +1,8 @@
+{
+  "name": "prueba-tecnica-isssteson",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter frontend dev",
+    "build": "pnpm --filter frontend build"
+  }
+}
