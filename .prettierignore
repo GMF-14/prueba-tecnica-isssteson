@@ -2,3 +2,4 @@ backend/
 node_modules/
 frontend/dist/
 pnpm-lock.yaml
+frontend/src/routeTree.gen.ts
