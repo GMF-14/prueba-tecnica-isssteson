@@ -80,11 +80,13 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Aplica migraciones pendientes al arrancar (incluye el seed del usuario admin).
+// Aplica migraciones pendientes al arrancar (incluye el seed de usuario/médicos/pacientes)
+// y siembra citas de ejemplo con fechas relativas a hoy.
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<CitasDbContext>();
     dbContext.Database.Migrate();
+    await CitasSeeder.SeedAsync(dbContext);
 }
 
 // Configure the HTTP request pipeline.
