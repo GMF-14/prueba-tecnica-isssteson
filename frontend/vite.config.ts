@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
@@ -7,7 +7,11 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite';
 export default defineConfig({
   plugins: [
     // Debe ir antes que el plugin de React: genera routeTree.gen.ts a partir de src/routes.
-    tanstackRouter({ target: 'react', autoCodeSplitting: true }),
+    tanstackRouter({
+      target: 'react',
+      autoCodeSplitting: true,
+      routeFileIgnorePattern: '\\.test\\.tsx$',
+    }),
     react(),
     tailwindcss(),
   ],
@@ -15,5 +19,10 @@ export default defineConfig({
     alias: {
       '@': `${import.meta.dirname}/src`,
     },
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
   },
 });

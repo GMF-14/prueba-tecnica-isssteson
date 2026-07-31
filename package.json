@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "pnpm --filter frontend dev",
     "build": "pnpm --filter frontend build",
+    "test": "pnpm --filter frontend test",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

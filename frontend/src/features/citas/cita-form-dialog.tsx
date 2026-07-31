@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-const citaSchema = z
+export const citaSchema = z
   .object({
     medicoId: z.string().min(1, 'Selecciona un médico'),
     pacienteId: z.string().min(1, 'Selecciona un paciente'),
