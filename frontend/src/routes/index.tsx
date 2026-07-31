@@ -14,6 +14,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useAuthStore } from '@/stores/auth-store';
 import { cancelarCita, consultarCitas, type Cita } from '@/features/citas/api';
 import { obtenerMedicos } from '@/features/medicos/api';
+import { CitaFormDialog } from '@/features/citas/cita-form-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -67,6 +68,8 @@ function ListaCitasPage() {
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
   const [vista, setVista] = useState<View>(Views.WEEK);
   const [fecha, setFecha] = useState(new Date());
+  const [formAbierto, setFormAbierto] = useState(false);
+  const [citaEnEdicion, setCitaEnEdicion] = useState<Cita | null>(null);
 
   const medicosQuery = useQuery({
     queryKey: ['medicos', { soloActivos: true }],
@@ -113,12 +116,22 @@ function ListaCitasPage() {
           <h1 className="text-2xl font-semibold">Citas</h1>
           <p className="text-muted-foreground text-sm">Sesión de {nombre}</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => useAuthStore.getState().logout()}
-        >
-          Cerrar sesión
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => {
+              setCitaEnEdicion(null);
+              setFormAbierto(true);
+            }}
+          >
+            Nueva cita
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => useAuthStore.getState().logout()}
+          >
+            Cerrar sesión
+          </Button>
+        </div>
       </header>
 
       <div className="flex flex-wrap items-end gap-4 rounded-lg border p-4">
@@ -252,21 +265,41 @@ function ListaCitasPage() {
 
               <DialogFooter>
                 {citaSeleccionada.estado === 'Programada' && (
-                  <Button
-                    variant="destructive"
-                    disabled={cancelarMutation.isPending}
-                    onClick={() => cancelarMutation.mutate(citaSeleccionada.id)}
-                  >
-                    {cancelarMutation.isPending
-                      ? 'Cancelando...'
-                      : 'Cancelar cita'}
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setCitaEnEdicion(citaSeleccionada);
+                        setCitaSeleccionada(null);
+                        setFormAbierto(true);
+                      }}
+                    >
+                      Editar
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      disabled={cancelarMutation.isPending}
+                      onClick={() =>
+                        cancelarMutation.mutate(citaSeleccionada.id)
+                      }
+                    >
+                      {cancelarMutation.isPending
+                        ? 'Cancelando...'
+                        : 'Cancelar cita'}
+                    </Button>
+                  </>
                 )}
               </DialogFooter>
             </>
           )}
         </DialogContent>
       </Dialog>
+
+      <CitaFormDialog
+        open={formAbierto}
+        onOpenChange={setFormAbierto}
+        citaExistente={citaEnEdicion}
+      />
     </div>
   );
 }

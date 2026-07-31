@@ -19,10 +19,29 @@ export interface ConsultarCitasParams {
   medicoId?: number;
 }
 
+export interface GuardarCitaRequest {
+  medicoId: number;
+  pacienteId: number;
+  fechaHoraInicio: string;
+}
+
 export async function consultarCitas(
   params: ConsultarCitasParams
 ): Promise<Cita[]> {
   const { data } = await apiClient.get<Cita[]>('/citas', { params });
+  return data;
+}
+
+export async function crearCita(request: GuardarCitaRequest): Promise<Cita> {
+  const { data } = await apiClient.post<Cita>('/citas', request);
+  return data;
+}
+
+export async function actualizarCita(
+  id: number,
+  request: GuardarCitaRequest
+): Promise<Cita> {
+  const { data } = await apiClient.put<Cita>(`/citas/${id}`, request);
   return data;
 }
 
