@@ -152,6 +152,11 @@ function ListaCitasPage() {
   });
 
   const solicitarCancelacion = async (cita: Cita) => {
+    // Cierra el diálogo de detalle (Radix) antes de abrir el de SweetAlert2:
+    // si ambos quedan abiertos al mismo tiempo, el "detector de clic afuera"
+    // de Radix intercepta el primer clic en el botón de confirmar y lo absorbe.
+    setCitaSeleccionada(null);
+
     const resultado = await confirmar.fire({
       icon: 'warning',
       title: '¿Cancelar esta cita?',
