@@ -9,6 +9,7 @@ import axios from 'axios';
 import { actualizarCita, crearCita, type Cita } from '@/features/citas/api';
 import { obtenerMedicos } from '@/features/medicos/api';
 import { obtenerPacientes } from '@/features/pacientes/api';
+import { notificar } from '@/lib/alertas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -120,6 +121,10 @@ export function CitaFormDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['citas'] });
       onOpenChange(false);
+      notificar.fire({
+        icon: 'success',
+        title: esEdicion ? 'Cita actualizada' : 'Cita creada',
+      });
     },
   });
 
