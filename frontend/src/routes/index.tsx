@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -11,15 +11,11 @@ import { format, getDay, parse, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarX, Plus, Stethoscope, X } from 'lucide-react';
+import { z } from 'zod';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 import { useAuthStore } from '@/stores/auth-store';
-import {
-  cancelarCita,
-  consultarCitas,
-  type Cita,
-  type EstadoCita,
-} from '@/features/citas/api';
+import { cancelarCita, consultarCitas, type Cita } from '@/features/citas/api';
 import { obtenerMedicos } from '@/features/medicos/api';
 import { CitaFormDialog } from '@/features/citas/cita-form-dialog';
 import { CalendarioToolbar } from '@/features/citas/calendario-toolbar';
@@ -45,7 +41,20 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+// Los filtros viven en la URL (search params) en vez de useState: así se
+// pueden compartir, guardar en favoritos, y sobreviven a un refresh.
+const citasSearchSchema = z.object({
+  fechaDesde: z.string().optional(),
+  fechaHasta: z.string().optional(),
+  medicoId: z.string().optional(),
+  estado: z.enum(['todas', 'Programada', 'Cancelada']).optional(),
+});
+
+type CitasSearch = z.infer<typeof citasSearchSchema>;
+
 export const Route = createFileRoute('/')({
+  validateSearch: (search: Record<string, unknown>) =>
+    citasSearchSchema.parse(search),
   beforeLoad: () => {
     if (!useAuthStore.getState().token) {
       throw redirect({ to: '/login' });
@@ -75,8 +84,6 @@ const itemVariants = {
     transition: { duration: 0.35, ease: 'easeOut' as const },
   },
 };
-
-type FiltroEstado = 'todas' | EstadoCita;
 
 interface CitaEvento {
   id: number;
@@ -109,7 +116,7 @@ function EventoCalendario({ event }: { event: CitaEvento }) {
 
 function ListaCitasPage() {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const navigate = Route.useNavigate();
   const nombre = useAuthStore(state => state.nombre);
 
   const cerrarSesion = () => {
@@ -117,10 +124,22 @@ function ListaCitasPage() {
     navigate({ to: '/login' });
   };
 
-  const [fechaDesde, setFechaDesde] = useState('');
-  const [fechaHasta, setFechaHasta] = useState('');
-  const [medicoId, setMedicoId] = useState('todos');
-  const [estado, setEstado] = useState<FiltroEstado>('todas');
+  const {
+    fechaDesde = '',
+    fechaHasta = '',
+    medicoId = 'todos',
+    estado = 'todas',
+  } = Route.useSearch();
+
+  // Actualiza uno o más filtros a la vez, conservando los demás en la URL.
+  // "replace" evita llenar el historial del navegador con cada tecleo/cambio.
+  const actualizarFiltros = (cambios: Partial<CitasSearch>) => {
+    navigate({
+      search: previo => ({ ...previo, ...cambios }) as CitasSearch,
+      replace: true,
+    });
+  };
+
   const [citaSeleccionada, setCitaSeleccionada] = useState<Cita | null>(null);
   const [vista, setVista] = useState<View>(Views.WEEK);
   const [fecha, setFecha] = useState(new Date());
@@ -191,12 +210,8 @@ function ListaCitasPage() {
     [citasFiltradas]
   );
 
-  const limpiarFiltros = () => {
-    setFechaDesde('');
-    setFechaHasta('');
-    setMedicoId('todos');
-    setEstado('todas');
-  };
+  const limpiarFiltros = () =>
+    navigate({ search: { medicoId: 'todos', estado: 'todas' }, replace: true });
 
   const medicoSeleccionado = medicosQuery.data?.find(
     m => String(m.id) === medicoId
@@ -206,22 +221,22 @@ function ListaCitasPage() {
     fechaDesde && {
       key: 'desde',
       label: `Desde: ${fechaDesde}`,
-      onRemove: () => setFechaDesde(''),
+      onRemove: () => actualizarFiltros({ fechaDesde: undefined }),
     },
     fechaHasta && {
       key: 'hasta',
       label: `Hasta: ${fechaHasta}`,
-      onRemove: () => setFechaHasta(''),
+      onRemove: () => actualizarFiltros({ fechaHasta: undefined }),
     },
     medicoId !== 'todos' && {
       key: 'medico',
       label: `Médico: ${medicoSeleccionado?.nombreCompleto ?? medicoId}`,
-      onRemove: () => setMedicoId('todos'),
+      onRemove: () => actualizarFiltros({ medicoId: 'todos' }),
     },
     estado !== 'todas' && {
       key: 'estado',
       label: `Estado: ${estado}`,
-      onRemove: () => setEstado('todas'),
+      onRemove: () => actualizarFiltros({ estado: 'todas' }),
     },
   ].filter(
     (chip): chip is { key: string; label: string; onRemove: () => void } =>
@@ -284,7 +299,11 @@ function ListaCitasPage() {
                 id="fechaDesde"
                 type="date"
                 value={fechaDesde}
-                onChange={event => setFechaDesde(event.target.value)}
+                onChange={event =>
+                  actualizarFiltros({
+                    fechaDesde: event.target.value || undefined,
+                  })
+                }
               />
             </div>
             <div className="space-y-1.5">
@@ -293,12 +312,19 @@ function ListaCitasPage() {
                 id="fechaHasta"
                 type="date"
                 value={fechaHasta}
-                onChange={event => setFechaHasta(event.target.value)}
+                onChange={event =>
+                  actualizarFiltros({
+                    fechaHasta: event.target.value || undefined,
+                  })
+                }
               />
             </div>
             <div className="space-y-1.5">
               <Label>Médico</Label>
-              <Select value={medicoId} onValueChange={setMedicoId}>
+              <Select
+                value={medicoId}
+                onValueChange={value => actualizarFiltros({ medicoId: value })}
+              >
                 <SelectTrigger className="w-full sm:w-56">
                   <SelectValue placeholder="Todos los médicos" />
                 </SelectTrigger>
@@ -316,7 +342,9 @@ function ListaCitasPage() {
               <Label>Estado</Label>
               <Select
                 value={estado}
-                onValueChange={value => setEstado(value as FiltroEstado)}
+                onValueChange={value =>
+                  actualizarFiltros({ estado: value as CitasSearch['estado'] })
+                }
               >
                 <SelectTrigger className="w-full sm:w-40">
                   <SelectValue />
