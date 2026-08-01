@@ -10,7 +10,7 @@ import {
 import { format, getDay, parse, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CalendarX, Plus, Stethoscope, X } from 'lucide-react';
+import { CalendarX, Plus, X } from 'lucide-react';
 import { z } from 'zod';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
@@ -21,6 +21,7 @@ import { CitaFormDialog } from '@/features/citas/cita-form-dialog';
 import { CalendarioToolbar } from '@/features/citas/calendario-toolbar';
 import { confirmar, notificar } from '@/lib/alertas';
 import { cn } from '@/lib/utils';
+import { AppHeader } from '@/components/app-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -117,12 +118,6 @@ function EventoCalendario({ event }: { event: CitaEvento }) {
 function ListaCitasPage() {
   const queryClient = useQueryClient();
   const navigate = Route.useNavigate();
-  const nombre = useAuthStore(state => state.nombre);
-
-  const cerrarSesion = () => {
-    useAuthStore.getState().logout();
-    navigate({ to: '/login' });
-  };
 
   const {
     fechaDesde = '',
@@ -245,42 +240,21 @@ function ListaCitasPage() {
 
   return (
     <div className="bg-muted min-h-svh">
-      <header className="bg-brand text-brand-foreground">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-brand-foreground/10 flex size-10 shrink-0 items-center justify-center rounded-full">
-              <Stethoscope className="size-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold sm:text-2xl">
-                Citas ISSSTESON
-              </h1>
-              <p className="text-brand-foreground/70 text-sm">
-                Sesión de {nombre}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setCitaEnEdicion(null);
-                setFormAbierto(true);
-              }}
-            >
-              <Plus className="size-4" />
-              Nueva cita
-            </Button>
-            <Button
-              variant="ghost"
-              className="text-brand-foreground hover:bg-brand-foreground/10 hover:text-brand-foreground"
-              onClick={cerrarSesion}
-            >
-              Cerrar sesión
-            </Button>
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        titulo="Citas ISSSTESON"
+        accion={
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setCitaEnEdicion(null);
+              setFormAbierto(true);
+            }}
+          >
+            <Plus className="size-4" />
+            Nueva cita
+          </Button>
+        }
+      />
 
       <motion.div
         variants={contenedorVariants}
