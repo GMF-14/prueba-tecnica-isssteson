@@ -7,6 +7,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Lockfiles de otros gestores de paquetes: el proyecto usa pnpm-lock.yaml (en la
+# raíz) como fuente de verdad; si corres "npm install" aquí, no se versiona el tuyo.
+package-lock.json
+yarn.lock
+
 node_modules
 dist
 dist-ssr

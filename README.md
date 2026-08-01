@@ -17,7 +17,9 @@ Para correrlo con Docker (recomendado) solo necesitas:
 Para desarrollo local sin Docker necesitas además:
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Node.js 22+](https://nodejs.org/) y [pnpm](https://pnpm.io/) (`corepack enable` es suficiente si usas una versión reciente de Node)
+- [Node.js 22+](https://nodejs.org/) y [pnpm](https://pnpm.io/) (recomendado; `corepack enable` es
+  suficiente si usas una versión reciente de Node) — **si prefieres `npm`**, también funciona, ver
+  la nota en [Desarrollo local](#no-tienes-pnpm-instalado).
 
 ## Levantar el proyecto con Docker (recomendado)
 
@@ -75,6 +77,23 @@ pnpm dev
 # Escucha en http://localhost:5173, y ya apunta a http://localhost:5291/api (ver frontend/.env)
 ```
 
+### ¿No tienes pnpm instalado?
+
+El repo está configurado como un _workspace_ de pnpm (por eso los comandos anteriores se corren
+desde la raíz), pero el frontend no tiene ninguna dependencia específica de pnpm — funciona igual
+con `npm`, solo que corriéndolo **dentro de `frontend/`** en vez de desde la raíz:
+
+```bash
+cd frontend
+npm install
+npm run dev      # equivalente a "pnpm dev"
+npm run build    # equivalente a "pnpm build"
+npm test         # equivalente a "pnpm test"
+```
+
+`npm install` genera su propio `package-lock.json` local (ignorado por git — el lockfile que se
+versiona es `pnpm-lock.yaml`, en la raíz), así que no hay conflicto entre ambos gestores.
+
 ## Tests
 
 ```bash
@@ -84,6 +103,7 @@ dotnet test
 
 # Frontend (Vitest + React Testing Library)
 pnpm test
+# o, sin pnpm: cd frontend && npm test
 ```
 
 ## Variables de entorno
