@@ -30,8 +30,8 @@ import {
 
 export const citaSchema = z
   .object({
-    medicoId: z.string().min(1, 'Selecciona un médico'),
-    pacienteId: z.string().min(1, 'Selecciona un paciente'),
+    medicoId: z.string().min(1, 'El médico es obligatorio'),
+    pacienteId: z.string().min(1, 'El paciente es obligatorio'),
     fecha: z.string().min(1, 'La fecha es obligatoria'),
     hora: z.string().min(1, 'La hora es obligatoria'),
   })

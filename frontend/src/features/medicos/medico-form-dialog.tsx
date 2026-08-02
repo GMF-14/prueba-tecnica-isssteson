@@ -75,10 +75,14 @@ export function MedicoFormDialog({
   }, [open, medicoExistente, reset]);
 
   const mutation = useMutation({
-    mutationFn: (values: MedicoFormValues) =>
+    mutationFn: ({ nombreCompleto, especialidad, activo }: MedicoFormValues) =>
       esEdicion
-        ? actualizarMedico(medicoExistente!.id, values)
-        : crearMedico(values),
+        ? actualizarMedico(medicoExistente!.id, {
+            nombreCompleto,
+            especialidad,
+            activo,
+          })
+        : crearMedico({ nombreCompleto, especialidad }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['medicos'] });
       onOpenChange(false);

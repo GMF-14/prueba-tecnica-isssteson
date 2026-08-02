@@ -83,15 +83,20 @@ export function PacienteFormDialog({
   }, [open, pacienteExistente, reset]);
 
   const mutation = useMutation({
-    mutationFn: (values: PacienteFormValues) => {
-      const payload = {
-        ...values,
-        telefono: values.telefono ?? '',
-        email: values.email ?? '',
+    mutationFn: ({
+      nombreCompleto,
+      telefono,
+      email,
+      activo,
+    }: PacienteFormValues) => {
+      const datos = {
+        nombreCompleto,
+        telefono: telefono ?? '',
+        email: email ?? '',
       };
       return esEdicion
-        ? actualizarPaciente(pacienteExistente!.id, payload)
-        : crearPaciente(payload);
+        ? actualizarPaciente(pacienteExistente!.id, { ...datos, activo })
+        : crearPaciente(datos);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pacientes'] });
